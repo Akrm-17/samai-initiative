@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>تسجيل منسق جديد - مبادرة سماي</title>
+    
+    <!-- Bootstrap RTL CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 1000;
+            padding: 0.8rem 0;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            transform: none;
+        }
+        
+        .search-result-card {
+            border: 2px solid #28a745;
+            background: rgba(40, 167, 69, 0.1);
+        }
+        
+        .linked-entity-card {
+            border: 2px solid #007bff;
+            background: rgba(0, 123, 255, 0.1);
+        }
+        
+        .entity-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .entity-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .remove-entity-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #dc3545;
+            color: white;
+            border: none;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .entity-stats {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        /* تحسينات للأجهزة المحمولة */
+        @media (max-width: 768px) {
+            .navbar .container-fluid {
+                padding: 0 1rem;
+            }
+            
+            .navbar-toggler {
+                display: block !important;
+            }
+            
+            .navbar-collapse {
+                background: rgba(255, 255, 255, 0.98);
+                border-radius: 10px;
+                margin-top: 1rem;
+                padding: 1rem;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            }
+            
+            .navbar-nav .nav-link {
+                padding: 0.75rem 1rem;
+                border-radius: 8px;
+                margin-bottom: 0.5rem;
+                transition: all 0.3s ease;
+            }
+            
+            .navbar-nav .nav-link:hover {
+                background: rgba(102, 126, 234, 0.1);
+                transform: translateX(5px);
+            }
+            
+            .card-body {
+                padding: 1.5rem;
+            }
+        }
+        
+        @media (max-width: 414px) {
+            .navbar .container-fluid {
+                padding: 0 0.5rem;
+            }
+            
+            .card-body {
+                padding: 1rem;
+            }
+            
+            .btn-primary {
+                padding: 0.6rem 1.5rem;
+                font-size: 0.9rem;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .navbar .navbar-nav {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 0.25rem;
+            }
+            .navbar .nav-item { margin-left: 0; margin-right: 0; }
+            .navbar .nav-link { white-space: nowrap; width: 100%; }
+        }
+        
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+        
+        .required {
+            color: #dc3545;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- شريط التنقل -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="index.html">
+                <i class="fas fa-brain me-2"></i>
+                مبادرة سماي
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold" href="index.html">
+                            <i class="fas fa-home me-1"></i>
+                            الرئيسية
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active fw-semibold" href="login.html">
+                            <i class="fas fa-user-plus me-1"></i>
+                            تسجيل منسق
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold" href="Achievement.html">
+                            <i class="fas fa-trophy me-1"></i>
+                            الأوسمة والإنجازات
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- المحتوى الرئيسي -->
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title text-center mb-4">
+                            <i class="fas fa-user-plus me-2 text-primary"></i>
+                            تسجيل منسق جديد
+                        </h2>
+                        
+                        <form id="coordinatorForm">
+                            <!-- البيانات الشخصية -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-primary mb-3">
+                                        <i class="fas fa-user me-2"></i>
+                                        البيانات الشخصية
+                                    </h5>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="civil_record" class="form-label">
+                                        السجل المدني <span class="required">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="civil_record" required 
+                                           placeholder="أدخل رقم السجل المدني" maxlength="10">
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="name" class="form-label">
+                                        الاسم الكامل <span class="required">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="name" required 
+                                           placeholder="أدخل الاسم الكامل">
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="phone_number" class="form-label">
+                                        رقم الجوال <span class="required">*</span>
+                                    </label>
+                                    <input type="tel" class="form-control" id="phone_number" required 
+                                           placeholder="05xxxxxxxx" maxlength="10">
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="coordinator_type" class="form-label">
+                                        نوع المنسق <span class="required">*</span>
+                                    </label>
+                                    <select class="form-control" id="coordinator_type" required>
+                                        <option value="">اختر نوع المنسق</option>
+                                        <option value="school">منسق مدرسة</option>
+                                        <option value="department">منسق قسم</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- قسم اختيار الجهة -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-primary mb-3">
+                                        <i class="fas fa-building me-2"></i>
+                                        اختيار الجهة
+                                    </h5>
+                                </div>
+                                
+                                <!-- اختيار القسم -->
+                                <div id="department_selection" style="display: none;">
+                                    <div class="col-12 mb-3">
+                                        <label for="department_id" class="form-label">
+                                            اختر القسم <span class="required">*</span>
+                                        </label>
+                                        <select class="form-control" id="department_id">
+                                            <option value="">اختر القسم</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- البحث عن المدرسة -->
+                                <div id="school_search" style="display: none;">
+                                    <div class="col-12 mb-3">
+                                        <label for="statistical_number" class="form-label">
+                                            الرقم الإحصائي للمدرسة <span class="required">*</span>
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="statistical_number" 
+                                                   placeholder="أدخل الرقم الإحصائي للمدرسة">
+                                            <button class="btn btn-outline-primary" type="button" id="searchSchoolBtn">
+                                                <div class="loading-spinner" id="searchSpinner"></div>
+                                                <i class="fas fa-search"></i>
+                                                بحث
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- نتائج البحث -->
+                            <div id="searchResult" style="display: none;" class="mb-4"></div>
+
+                            <!-- الجهات المرتبطة -->
+                            <div id="linkedEntitiesSection" style="display: none;" class="mb-4">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-link me-2"></i>
+                                    الجهات المرتبطة
+                                </h5>
+                                <div id="linkedEntities" class="row"></div>
+                                <small class="text-muted">يمكن ربط حد أقصى 4 جهات</small>
+                            </div>
+
+                            <!-- زر التسجيل -->
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>
+                                    <div class="loading-spinner" id="submitSpinner"></div>
+                                    <i class="fas fa-paper-plane me-2"></i>
+                                    تسجيل المنسق
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- الشريط السفلي -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>
+                        <i class="fas fa-brain me-2"></i>
+                        مبادرة سماي
+                    </h5>
+                    <p class="text-muted">
+                        مبادرة وطنية لتعزيز الوعي بتقنيات الذكاء الاصطناعي في المملكة العربية السعودية
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <h6>الجهة المطورة</h6>
+                    <p class="text-muted mb-1">إدارة الموارد البشرية</p>
+                    <p class="text-muted">الإدارة العامة للتعليم بمنطقة تبوك</p>
+                </div>
+            </div>
+            <hr>
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="mb-0 text-muted">
+                        &copy; 2024 مبادرة سماي. جميع الحقوق محفوظة.
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <span class="badge bg-primary">نسخة 2.0</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // =================================================
+        // ضع مفاتيح Supabase الخاصة بك هنا
+        // =================================================
+        const SUPABASE_URL = 'https://grinqiylfsiuxrpykquq.supabase.co'; // مثال: 'https://abcdefghijklmnop.supabase.co'
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyaW5xaXlsZnNpdXhycHlrcXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTMyNjMsImV4cCI6MjA3MzM2OTI2M30.Sv-WvrdRzO3kYjBmeGjaY84KUQ7GVaMmt0I7kQpH9-U'; // مفتاح anon public
+        // =================================================
+        
+        let supabase;
+        let linkedEntities = []; // لتخزين الجهات التي يختارها المستخدم
+        
+        // التحقق من وجود مفاتيح Supabase
+        if (SUPABASE_URL === 'https://grinqiylfsiuxrpykquq.supabase.co' || SUPABASE_ANON_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyaW5xaXlsZnNpdXhycHlrcXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTMyNjMsImV4cCI6MjA3MzM2OTI2M30.Sv-WvrdRzO3kYjBmeGjaY84KUQ7GVaMmt0I7kQpH9-U') {
+            console.warn('تحذير: لم يتم تعيين مفاتيح Supabase. سيتم تعطيل الوظائف التفاعلية.');
+            showAlert('تحذير: لم يتم ربط قاعدة البيانات. يرجى التواصل مع المطور.', 'warning');
+        } else {
+            // إنشاء اتصال Supabase
+            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+        
+        // العناصر الرئيسية
+        const coordinatorTypeSelect = document.getElementById('coordinator_type');
+        const departmentSelectionDiv = document.getElementById('department_selection');
+        const schoolSearchDiv = document.getElementById('school_search');
+        const departmentSelect = document.getElementById('department_id');
+        const searchResultDiv = document.getElementById('searchResult');
+        const linkedEntitiesDiv = document.getElementById('linkedEntities');
+        const linkedEntitiesSection = document.getElementById('linkedEntitiesSection');
+        const submitBtn = document.getElementById('submitBtn');
+        const searchSchoolBtn = document.getElementById('searchSchoolBtn');
+        
+        // دالة لعرض الإشعارات
+        function showAlert(message, type = 'info') {
+            Swal.fire({
+                title: type === 'success' ? 'نجح!' : type === 'error' ? 'خطأ!' : 'تنبيه',
+                text: message,
+                icon: type,
+                confirmButtonText: 'موافق',
+                confirmButtonColor: '#667eea'
+            });
+        }
+        
+        // دالة لجلب الأقسام من Supabase
+        async function loadDepartments() {
+            if (!supabase) return;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('departments')
+                    .select('*')
+                    .eq('is_linked', false)
+                    .order('name');
+                
+                if (error) {
+                    console.error('خطأ في جلب الأقسام:', error);
+                    return;
+                }
+                
+                departmentSelect.innerHTML = '<option value="">اختر القسم</option>';
+                data.forEach(dept => {
+                    const option = document.createElement('option');
+                    option.value = dept.id;
+                    option.textContent = dept.full_path;
+                    option.dataset.name = dept.name;
+                    departmentSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('خطأ في الاتصال بقاعدة البيانات:', error);
+            }
+        }
+        
+        // دالة للبحث عن مدرسة
+        async function searchSchool() {
+            if (!supabase) {
+                showAlert('لم يتم ربط قاعدة البيانات', 'error');
+                return;
+            }
+            
+            const statisticalNumber = document.getElementById('statistical_number').value.trim();
+            if (!statisticalNumber) {
+                showAlert('يرجى إدخال الرقم الإحصائي للمدرسة', 'warning');
+                return;
+            }
+            
+            // إظهار مؤشر التحميل
+            const spinner = document.getElementById('searchSpinner');
+            spinner.style.display = 'inline-block';
+            searchSchoolBtn.disabled = true;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('schools')
+                    .select('*')
+                    .eq('statistical_number', statisticalNumber)
+                    .single();
+                
+                if (error || !data) {
+                    searchResultDiv.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            لم يتم العثور على مدرسة بهذا الرقم الإحصائي.
+                        </div>
+                    `;
+                    searchResultDiv.style.display = 'block';
+                    return;
+                }
+                
+                if (data.is_linked) {
+                    searchResultDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-times-circle me-2"></i>
+                            هذه المدرسة مرتبطة بمنسق آخر بالفعل.
+                        </div>
+                    `;
+                    searchResultDiv.style.display = 'block';
+                    return;
+                }
+                
+                // عرض نتيجة البحث
+                searchResultDiv.innerHTML = `
+                    <div class="card search-result-card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="fas fa-school me-2"></i>
+                                ${data.name}
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-1"><strong>المحافظة:</strong> ${data.governorate}</p>
+                                    <p class="mb-1"><strong>الجنس:</strong> ${data.gender}</p>
+                                    <p class="mb-1"><strong>المرحلة:</strong> ${data.stage}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="entity-stats">
+                                        <p class="mb-1"><i class="fas fa-users me-1"></i> إداريين: ${data.target_admins}</p>
+                                        <p class="mb-1"><i class="fas fa-chalkboard-teacher me-1"></i> معلمين: ${data.target_teachers}</p>
+                                        <p class="mb-1"><i class="fas fa-user-graduate me-1"></i> طلاب: ${data.target_students}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-success mt-3" onclick="linkEntity(${JSON.stringify(data).replace(/"/g, '&quot;')}, 'school')">
+                                <i class="fas fa-link me-2"></i>
+                                ربط هذه المدرسة
+                            </button>
+                        </div>
+                    </div>
+                `;
+                searchResultDiv.style.display = 'block';
+                
+            } catch (error) {
+                console.error('خطأ في البحث:', error);
+                showAlert('حدث خطأ أثناء البحث', 'error');
+            } finally {
+                // إخفاء مؤشر التحميل
+                spinner.style.display = 'none';
+                searchSchoolBtn.disabled = false;
+            }
+        }
+        
+        // دالة لربط الجهة المختارة
+        function linkEntity(entityData, type) {
+            if (linkedEntities.length >= 4) {
+                showAlert('لا يمكن ربط أكثر من 4 جهات.', 'warning');
+                return;
+            }
+            
+            // التحقق من عدم وجود الجهة مسبقاً
+            const exists = linkedEntities.some(entity => 
+                entity.id === entityData.id && entity.type === type
+            );
+            
+            if (exists) {
+                showAlert('هذه الجهة مرتبطة بالفعل.', 'warning');
+                return;
+            }
+            
+            const entity = { 
+                id: entityData.id, 
+                name: entityData.name, 
+                type: type,
+                data: entityData
+            };
+            
+            linkedEntities.push(entity);
+            updateLinkedEntitiesDisplay();
+            
+            // إخفاء نتيجة البحث ومسح الحقل
+            searchResultDiv.style.display = 'none';
+            document.getElementById('statistical_number').value = '';
+            
+            // إخفاء قائمة الأقسام إذا تم اختيار قسم
+            if (type === 'department') {
+                departmentSelect.value = '';
+            }
+            
+            checkFormValidity();
+        }
+        
+        // دالة لتحديث عرض الجهات المرتبطة
+        function updateLinkedEntitiesDisplay() {
+            if (linkedEntities.length === 0) {
+                linkedEntitiesSection.style.display = 'none';
+                return;
+            }
+            
+            linkedEntitiesSection.style.display = 'block';
+            linkedEntitiesDiv.innerHTML = '';
+            
+            linkedEntities.forEach((entity, index) => {
+                const entityCard = document.createElement('div');
+                entityCard.className = 'col-md-6 mb-3';
+                
+                const isSchool = entity.type === 'school';
+                const iconClass = isSchool ? 'fas fa-school' : 'fas fa-building';
+                const typeLabel = isSchool ? 'مدرسة' : 'قسم';
+                
+                let statsHtml = '';
+                if (isSchool) {
+                    const data = entity.data;
+                    statsHtml = `
+                        <div class="entity-stats mt-2">
+                            <small>
+                                <i class="fas fa-users me-1"></i> إداريين: ${data.target_admins} |
+                                <i class="fas fa-chalkboard-teacher me-1"></i> معلمين: ${data.target_teachers} |
+                                <i class="fas fa-user-graduate me-1"></i> طلاب: ${data.target_students}
+                            </small>
+                        </div>
+                    `;
+                }
+                
+                entityCard.innerHTML = `
+                    <div class="card linked-entity-card position-relative">
+                        <button class="remove-entity-btn" onclick="removeEntity(${index})" title="إزالة">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="${iconClass} me-2"></i>
+                                ${entity.name}
+                            </h6>
+                            <span class="badge bg-primary">${typeLabel}</span>
+                            ${statsHtml}
+                        </div>
+                    </div>
+                `;
+                
+                linkedEntitiesDiv.appendChild(entityCard);
+            });
+        }
+        
+        // دالة لإزالة جهة مرتبطة
+        function removeEntity(index) {
+            linkedEntities.splice(index, 1);
+            updateLinkedEntitiesDisplay();
+            checkFormValidity();
+        }
+        
+        // دالة للتحقق من صحة النموذج
+        function checkFormValidity() {
+            const civilRecord = document.getElementById('civil_record').value.trim();
+            const name = document.getElementById('name').value.trim();
+            const phoneNumber = document.getElementById('phone_number').value.trim();
+            const coordinatorType = coordinatorTypeSelect.value;
+            
+            const isValid = civilRecord && name && phoneNumber && coordinatorType && linkedEntities.length > 0;
+            submitBtn.disabled = !isValid;
+        }
+        
+        // دالة لإرسال البيانات إلى Supabase
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            if (!supabase) {
+                showAlert('لم يتم ربط قاعدة البيانات', 'error');
+                return;
+            }
+            
+            if (linkedEntities.length === 0) {
+                showAlert('يرجى ربط جهة واحدة على الأقل', 'warning');
+                return;
+            }
+            
+            // إظهار مؤشر التحميل
+            const spinner = document.getElementById('submitSpinner');
+            spinner.style.display = 'inline-block';
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<div class="loading-spinner" style="display: inline-block;"></div> جاري التسجيل...';
+            
+            try {
+                const civilRecord = document.getElementById('civil_record').value.trim();
+                const fullName = document.getElementById('name').value.trim();
+                const phoneNumber = document.getElementById('phone_number').value.trim();
+                const coordinatorType = coordinatorTypeSelect.value;
+                
+                // 1. إضافة المنسق إلى جدول coordinators
+                const { data: coordinatorData, error: coordinatorError } = await supabase
+                    .from('coordinators')
+                    .insert({
+                        civil_record: civilRecord,
+                        full_name: fullName,
+                        phone_number: phoneNumber,
+                        coordinator_type: coordinatorType
+                    })
+                    .select()
+                    .single();
+                
+                if (coordinatorError) {
+                    console.error('خطأ في إضافة المنسق:', coordinatorError);
+                    if (coordinatorError.code === '23505') {
+                        showAlert('هذا السجل المدني مسجل مسبقاً', 'error');
+                    } else {
+                        showAlert('حدث خطأ: ' + coordinatorError.message, 'error');
+                    }
+                    return;
+                }
+                
+                // 2. ربط الجهات بالمنسق في جدول coordinator_entities
+                const linksToInsert = linkedEntities.map(entity => ({
+                    coordinator_id: coordinatorData.id,
+                    entity_type: entity.type,
+                    school_id: entity.type === 'school' ? entity.id : null,
+                    department_id: entity.type === 'department' ? entity.id : null
+                }));
+                
+                const { error: linksError } = await supabase
+                    .from('coordinator_entities')
+                    .insert(linksToInsert);
+                
+                if (linksError) {
+                    console.error('خطأ في ربط الجهات:', linksError);
+                    showAlert('حدث خطأ أثناء ربط الجهات: ' + linksError.message, 'error');
+                    return;
+                }
+                
+                // 3. تحديث حالة الجهات إلى is_linked = true
+                const schoolIds = linkedEntities.filter(e => e.type === 'school').map(e => e.id);
+                const departmentIds = linkedEntities.filter(e => e.type === 'department').map(e => e.id);
+                
+                if (schoolIds.length > 0) {
+                    await supabase.from('schools').update({ is_linked: true }).in('id', schoolIds);
+                }
+                if (departmentIds.length > 0) {
+                    await supabase.from('departments').update({ is_linked: true }).in('id', departmentIds);
+                }
+                
+                // إظهار رسالة نجاح
+                Swal.fire({
+                    title: 'تم بنجاح!',
+                    text: 'تم تسجيل طلبك بنجاح وسيتم مراجعته من قبل الإدارة.',
+                    icon: 'success',
+                    confirmButtonText: 'موافق',
+                    confirmButtonColor: '#667eea'
+                }).then(() => {
+                    // إعادة توجيه إلى الصفحة الرئيسية
+                    window.location.href = 'index.html';
+                });
+                
+            } catch (error) {
+                console.error('خطأ عام:', error);
+                showAlert('حدث خطأ غير متوقع', 'error');
+            } finally {
+                // إخفاء مؤشر التحميل
+                spinner.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> تسجيل المنسق';
+            }
+        }
+        
+        // ربط الأحداث
+        coordinatorTypeSelect.addEventListener('change', function() {
+            const selectedType = this.value;
+            
+            if (selectedType === 'school') {
+                departmentSelectionDiv.style.display = 'none';
+                schoolSearchDiv.style.display = 'block';
+            } else if (selectedType === 'department') {
+                schoolSearchDiv.style.display = 'none';
+                departmentSelectionDiv.style.display = 'block';
+            } else {
+                departmentSelectionDiv.style.display = 'none';
+                schoolSearchDiv.style.display = 'none';
+            }
+            
+            checkFormValidity();
+        });
+        
+        departmentSelect.addEventListener('change', function() {
+            if (this.value) {
+                const selectedOption = this.options[this.selectedIndex];
+                const departmentData = {
+                    id: parseInt(this.value),
+                    name: selectedOption.dataset.name,
+                    full_path: selectedOption.textContent
+                };
+                linkEntity(departmentData, 'department');
+            }
+        });
+        
+        searchSchoolBtn.addEventListener('click', searchSchool);
+        
+        document.getElementById('statistical_number').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchSchool();
+            }
+        });
+        
+        document.getElementById('coordinatorForm').addEventListener('submit', handleFormSubmit);
+        
+        // التحقق من صحة النموذج عند تغيير أي حقل
+        ['civil_record', 'name', 'phone_number'].forEach(fieldId => {
+            document.getElementById(fieldId).addEventListener('input', checkFormValidity);
+        });
+        
+        // التحقق من صحة رقم الجوال
+        document.getElementById('phone_number').addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, ''); // إزالة أي شيء غير رقمي
+            if (value.length > 10) value = value.slice(0, 10);
+            this.value = value;
+            
+            if (value.length > 0 && !value.startsWith('05')) {
+                this.setCustomValidity('رقم الجوال يجب أن يبدأ بـ 05');
+            } else if (value.length > 0 && value.length !== 10) {
+                this.setCustomValidity('رقم الجوال يجب أن يكون 10 أرقام');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+        
+        // التحقق من صحة السجل المدني
+        document.getElementById('civil_record').addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, ''); // إزالة أي شيء غير رقمي
+            if (value.length > 10) value = value.slice(0, 10);
+            this.value = value;
+            
+            if (value.length > 0 && value.length !== 10) {
+                this.setCustomValidity('السجل المدني يجب أن يكون 10 أرقام');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+        
+        // عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDepartments();
+            checkFormValidity();
+        });
+        
+        // جعل الدوال متاحة عالمياً
+        window.linkEntity = linkEntity;
+        window.removeEntity = removeEntity;
+    </script>
+</body>
+</html>
+

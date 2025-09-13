@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>الأوسمة والإنجازات - مبادرة سماي</title>
+    
+    <!-- Bootstrap RTL CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 1000;
+            padding: 0.8rem 0;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .achievement-card {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .achievement-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+        }
+        
+        .achievement-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .achievement-card:hover .achievement-icon {
+            transform: scale(1.1);
+        }
+        
+        /* أنماط الأوسمة */
+        .tier-gold {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #8B4513;
+        }
+        
+        .tier-silver {
+            background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
+            color: #2F4F4F;
+        }
+        
+        .tier-bronze {
+            background: linear-gradient(135deg, #CD7F32, #B87333);
+            color: #FFFFFF;
+        }
+        
+        .tier-participation {
+            background: linear-gradient(135deg, #32CD32, #228B22);
+            color: #FFFFFF;
+        }
+        
+        .tier-initiative {
+            background: linear-gradient(135deg, #4169E1, #1E90FF);
+            color: #FFFFFF;
+        }
+        
+        .tier-diamond {
+            background: linear-gradient(135deg, #B9F2FF, #00BFFF);
+            color: #000080;
+            position: relative;
+        }
+        
+        .tier-diamond::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+            animation: shimmer 2s infinite;
+        }
+        
+        .tier-platinum {
+            background: linear-gradient(135deg, #E5E4E2, #C0C0C0);
+            color: #2F4F4F;
+        }
+        
+        .tier-crystal {
+            background: linear-gradient(135deg, #F0F8FF, #E6E6FA);
+            color: #4B0082;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .achievement-stats {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .achievement-percentage {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+        
+        .level-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .achievement-count {
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-top: 1rem;
+            display: inline-block;
+        }
+        
+        /* تحسينات للأجهزة المحمولة */
+        @media (max-width: 768px) {
+            .navbar .container-fluid {
+                padding: 0 1rem;
+            }
+            
+            .navbar-toggler {
+                display: block !important;
+            }
+            
+            .navbar-collapse {
+                background: rgba(255, 255, 255, 0.98);
+                border-radius: 10px;
+                margin-top: 1rem;
+                padding: 1rem;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            }
+            
+            .navbar-nav .nav-link {
+                padding: 0.75rem 1rem;
+                border-radius: 8px;
+                margin-bottom: 0.5rem;
+                transition: all 0.3s ease;
+            }
+            
+            .navbar-nav .nav-link:hover {
+                background: rgba(102, 126, 234, 0.1);
+                transform: translateX(5px);
+            }
+            
+            .achievement-icon {
+                font-size: 3rem;
+            }
+            
+            .card-body {
+                padding: 1.5rem;
+            }
+        }
+        
+        @media (max-width: 414px) {
+            .navbar .container-fluid {
+                padding: 0 0.5rem;
+            }
+            
+            .achievement-icon {
+                font-size: 2.5rem;
+            }
+            
+            .card-body {
+                padding: 1rem;
+            }
+            
+            .level-header {
+                padding: 1rem;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .navbar .navbar-nav {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 0.25rem;
+            }
+            .navbar .nav-item { margin-left: 0; margin-right: 0; }
+            .navbar .nav-link { white-space: nowrap; width: 100%; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- شريط التنقل -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="index.html">
+                <i class="fas fa-brain me-2"></i>
+                مبادرة سماي
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold" href="index.html">
+                            <i class="fas fa-home me-1"></i>
+                            الرئيسية
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold" href="login.html">
+                            <i class="fas fa-user-plus me-1"></i>
+                            تسجيل منسق
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active fw-semibold" href="Achievement.html">
+                            <i class="fas fa-trophy me-1"></i>
+                            الأوسمة والإنجازات
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- المحتوى الرئيسي -->
+    <div class="container my-5">
+        <!-- العنوان الرئيسي -->
+        <div class="text-center mb-5">
+            <div class="level-header">
+                <h1 class="display-4 fw-bold mb-3">
+                    <i class="fas fa-trophy me-3"></i>
+                    الأوسمة والإنجازات
+                </h1>
+                <p class="lead mb-3">
+                    نظام تحفيزي شامل لتقدير الجهود المبذولة في مبادرة سماي
+                </p>
+                <div class="achievement-count" id="totalAchievements">
+                    <i class="fas fa-medal me-2"></i>
+                    جاري التحميل...
+                </div>
+            </div>
+        </div>
+
+        <!-- مؤشر التحميل -->
+        <div id="loadingSpinner" class="text-center">
+            <div class="loading-spinner"></div>
+            <p class="mt-3">جاري تحميل الأوسمة...</p>
+        </div>
+
+        <!-- المستوى الأول: أوسمة المراتب -->
+        <div id="level1Section" style="display: none;">
+            <div class="level-header">
+                <h2 class="h3 mb-3">
+                    <i class="fas fa-star me-2"></i>
+                    المستوى الأول: أوسمة المراتب
+                </h2>
+                <p class="mb-0">تُمنح بناءً على نسبة الإنجاز من المستهدفات</p>
+            </div>
+            
+            <div class="row" id="level1Achievements">
+                <!-- سيتم ملؤها ديناميكياً -->
+            </div>
+        </div>
+
+        <!-- المستوى الثاني: الأوسمة المتقدمة -->
+        <div id="level2Section" style="display: none;" class="mt-5">
+            <div class="level-header">
+                <h2 class="h3 mb-3">
+                    <i class="fas fa-gem me-2"></i>
+                    المستوى الثاني: الأوسمة المتقدمة
+                </h2>
+                <p class="mb-0">تُمنح بناءً على تحقيق نسب إنجاز عالية تتجاوز المستهدفات الأساسية</p>
+            </div>
+            
+            <div class="row" id="level2Achievements">
+                <!-- سيتم ملؤها ديناميكياً -->
+            </div>
+        </div>
+
+        <!-- رسالة عدم وجود بيانات -->
+        <div id="noDataMessage" style="display: none;" class="text-center">
+            <div class="card">
+                <div class="card-body py-5">
+                    <i class="fas fa-exclamation-triangle text-warning" style="font-size: 4rem;"></i>
+                    <h3 class="mt-3">لا توجد أوسمة متاحة حالياً</h3>
+                    <p class="text-muted">يرجى المحاولة مرة أخرى لاحقاً أو التواصل مع الإدارة</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- الشريط السفلي -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>
+                        <i class="fas fa-brain me-2"></i>
+                        مبادرة سماي
+                    </h5>
+                    <p class="text-muted">
+                        مبادرة وطنية لتعزيز الوعي بتقنيات الذكاء الاصطناعي في المملكة العربية السعودية
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <h6>الجهة المطورة</h6>
+                    <p class="text-muted mb-1">إدارة الموارد البشرية</p>
+                    <p class="text-muted">الإدارة العامة للتعليم بمنطقة تبوك</p>
+                </div>
+            </div>
+            <hr>
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="mb-0 text-muted">
+                        &copy; 2024 مبادرة سماي. جميع الحقوق محفوظة.
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <span class="badge bg-primary">نسخة 2.0</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // =================================================
+        // ضع مفاتيح Supabase الخاصة بك هنا
+        // =================================================
+        const SUPABASE_URL = 'https://grinqiylfsiuxrpykquq.supabase.co'; // مثال: 'https://abcdefghijklmnop.supabase.co'
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyaW5xaXlsZnNpdXhycHlrcXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTMyNjMsImV4cCI6MjA3MzM2OTI2M30.Sv-WvrdRzO3kYjBmeGjaY84KUQ7GVaMmt0I7kQpH9-U'; // مفتاح anon public
+        // =================================================
+        
+        let supabase;
+        
+        // التحقق من وجود مفاتيح Supabase
+        if (SUPABASE_URL === 'https://grinqiylfsiuxrpykquq.supabase.co' || SUPABASE_ANON_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyaW5xaXlsZnNpdXhycHlrcXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTMyNjMsImV4cCI6MjA3MzM2OTI2M30.Sv-WvrdRzO3kYjBmeGjaY84KUQ7GVaMmt0I7kQpH9-U') {
+            console.warn('تحذير: لم يتم تعيين مفاتيح Supabase. سيتم عرض البيانات الافتراضية.');
+            loadDefaultAchievements();
+        } else {
+            // إنشاء اتصال Supabase
+            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            loadAchievements();
+        }
+        
+        // دالة لتحميل الأوسمة من قاعدة البيانات
+        async function loadAchievements() {
+            try {
+                const { data, error } = await supabase
+                    .from('achievements')
+                    .select('*')
+                    .order('level')
+                    .order('rank');
+                
+                if (error) {
+                    console.error('خطأ في تحميل الأوسمة:', error);
+                    loadDefaultAchievements();
+                    return;
+                }
+                
+                if (data && data.length > 0) {
+                    displayAchievements(data);
+                } else {
+                    showNoDataMessage();
+                }
+            } catch (error) {
+                console.error('خطأ في الاتصال بقاعدة البيانات:', error);
+                loadDefaultAchievements();
+            }
+        }
+        
+        // دالة لتحميل البيانات الافتراضية
+        function loadDefaultAchievements() {
+            const defaultAchievements = [
+                {
+                    id: 1,
+                    name: 'وسام التميز الذهبي',
+                    description: 'يُمنح للجهات التي حققت نسبة إنجاز 100% من المستهدفات',
+                    level: 1,
+                    rank: 1,
+                    achievement_percentage: 100,
+                    tier_class: 'tier-gold',
+                    emblem_class: 'emblem-gold',
+                    emblem_icon: 'fas fa-trophy',
+                    schools_count: 15,
+                    departments_count: 3
+                },
+                {
+                    id: 2,
+                    name: 'وسام الإنجاز الفضي',
+                    description: 'يُمنح للجهات التي حققت نسبة إنجاز 90% من المستهدفات',
+                    level: 1,
+                    rank: 2,
+                    achievement_percentage: 90,
+                    tier_class: 'tier-silver',
+                    emblem_class: 'emblem-silver',
+                    emblem_icon: 'fas fa-medal',
+                    schools_count: 28,
+                    departments_count: 5
+                },
+                {
+                    id: 3,
+                    name: 'وسام التقدم البرونزي',
+                    description: 'يُمنح للجهات التي حققت نسبة إنجاز 80% من المستهدفات',
+                    level: 1,
+                    rank: 3,
+                    achievement_percentage: 80,
+                    tier_class: 'tier-bronze',
+                    emblem_class: 'emblem-bronze',
+                    emblem_icon: 'fas fa-award',
+                    schools_count: 42,
+                    departments_count: 8
+                },
+                {
+                    id: 4,
+                    name: 'وسام المشاركة',
+                    description: 'يُمنح للجهات التي حققت نسبة إنجاز 70% من المستهدفات',
+                    level: 1,
+                    rank: 4,
+                    achievement_percentage: 70,
+                    tier_class: 'tier-participation',
+                    emblem_class: 'emblem-participation',
+                    emblem_icon: 'fas fa-handshake',
+                    schools_count: 67,
+                    departments_count: 12
+                },
+                {
+                    id: 5,
+                    name: 'وسام المبادرة',
+                    description: 'يُمنح للجهات التي حققت نسبة إنجاز 50% من المستهدفات',
+                    level: 1,
+                    rank: 5,
+                    achievement_percentage: 50,
+                    tier_class: 'tier-initiative',
+                    emblem_class: 'emblem-initiative',
+                    emblem_icon: 'fas fa-star',
+                    schools_count: 89,
+                    departments_count: 18
+                },
+                {
+                    id: 6,
+                    name: 'الوسام الماسي',
+                    description: 'أعلى وسام يُمنح للجهات التي حققت نسبة إنجاز 200% من المستهدفات',
+                    level: 2,
+                    rank: 1,
+                    achievement_percentage: 200,
+                    tier_class: 'tier-diamond',
+                    emblem_class: 'emblem-diamond',
+                    emblem_icon: 'fas fa-gem',
+                    schools_count: 3,
+                    departments_count: 1
+                },
+                {
+                    id: 7,
+                    name: 'الوسام البلاتيني',
+                    description: 'وسام متقدم يُمنح للجهات التي حققت نسبة إنجاز 175% من المستهدفات',
+                    level: 2,
+                    rank: 2,
+                    achievement_percentage: 175,
+                    tier_class: 'tier-platinum',
+                    emblem_class: 'emblem-platinum',
+                    emblem_icon: 'fas fa-crown',
+                    schools_count: 7,
+                    departments_count: 2
+                },
+                {
+                    id: 8,
+                    name: 'الوسام الكريستالي',
+                    description: 'وسام متميز يُمنح للجهات التي حققت نسبة إنجاز 150% من المستهدفات',
+                    level: 2,
+                    rank: 3,
+                    achievement_percentage: 150,
+                    tier_class: 'tier-crystal',
+                    emblem_class: 'emblem-crystal',
+                    emblem_icon: 'fas fa-diamond',
+                    schools_count: 12,
+                    departments_count: 4
+                }
+            ];
+            
+            displayAchievements(defaultAchievements);
+        }
+        
+        // دالة لعرض الأوسمة
+        function displayAchievements(achievements) {
+            const level1Achievements = achievements.filter(a => a.level === 1);
+            const level2Achievements = achievements.filter(a => a.level === 2);
+            
+            // إخفاء مؤشر التحميل
+            document.getElementById('loadingSpinner').style.display = 'none';
+            
+            // عرض المستوى الأول
+            if (level1Achievements.length > 0) {
+                document.getElementById('level1Section').style.display = 'block';
+                renderAchievementLevel('level1Achievements', level1Achievements);
+            }
+            
+            // عرض المستوى الثاني
+            if (level2Achievements.length > 0) {
+                document.getElementById('level2Section').style.display = 'block';
+                renderAchievementLevel('level2Achievements', level2Achievements);
+            }
+            
+            // تحديث عداد الأوسمة
+            document.getElementById('totalAchievements').innerHTML = `
+                <i class="fas fa-medal me-2"></i>
+                إجمالي الأوسمة: ${achievements.length}
+            `;
+        }
+        
+        // دالة لعرض أوسمة مستوى معين
+        function renderAchievementLevel(containerId, achievements) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            achievements.forEach(achievement => {
+                const achievementCard = createAchievementCard(achievement);
+                container.appendChild(achievementCard);
+            });
+        }
+        
+        // دالة لإنشاء بطاقة وسام
+        function createAchievementCard(achievement) {
+            const col = document.createElement('div');
+            col.className = 'col-lg-4 col-md-6 mb-4';
+            
+            const totalEntities = achievement.schools_count + achievement.departments_count;
+            
+            col.innerHTML = `
+                <div class="card achievement-card ${achievement.tier_class}">
+                    <div class="card-body text-center">
+                        <div class="achievement-icon">
+                            <i class="${achievement.emblem_icon}"></i>
+                        </div>
+                        <h4 class="card-title fw-bold mb-3">${achievement.name}</h4>
+                        <p class="card-text mb-3">${achievement.description}</p>
+                        
+                        <div class="achievement-percentage">
+                            <i class="fas fa-percentage me-2"></i>
+                            ${achievement.achievement_percentage}% من المستهدفات
+                        </div>
+                        
+                        <div class="achievement-stats mt-3">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="fw-bold">${achievement.schools_count}</div>
+                                    <small>مدرسة</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="fw-bold">${achievement.departments_count}</div>
+                                    <small>قسم</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="fw-bold">${totalEntities}</div>
+                                    <small>إجمالي</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <span class="badge bg-light text-dark">
+                                المرتبة ${achievement.rank} - المستوى ${achievement.level}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return col;
+        }
+        
+        // دالة لعرض رسالة عدم وجود بيانات
+        function showNoDataMessage() {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('noDataMessage').style.display = 'block';
+        }
+        
+        // تأثيرات تفاعلية للبطاقات
+        document.addEventListener('DOMContentLoaded', function() {
+            // إضافة تأثير hover للبطاقات
+            document.addEventListener('mouseenter', function(e) {
+                if (e.target.closest('.achievement-card')) {
+                    const card = e.target.closest('.achievement-card');
+                    card.style.transform = 'translateY(-8px)';
+                    card.style.boxShadow = '0 15px 40px rgba(0,0,0,0.2)';
+                }
+            }, true);
+            
+            document.addEventListener('mouseleave', function(e) {
+                if (e.target.closest('.achievement-card')) {
+                    const card = e.target.closest('.achievement-card');
+                    card.style.transform = 'translateY(0)';
+                    card.style.boxShadow = '0 5px 25px rgba(0,0,0,0.1)';
+                }
+            }, true);
+        });
+    </script>
+</body>
+</html>
+
